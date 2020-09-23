@@ -1,0 +1,149 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<title>Insert title here</title>
+<style type="text/css">
+	div{
+		float: left;
+	}
+</style>
+	<script language="JavaScript" src="../js/jquery.min.js"></script>
+</head>
+<body>
+	<!--卡号，<p id="cardno"></p>，<a href="#">退出登录</a>-->
+	<br>
+	<div style="padding-top: 40px;" >
+	<a   id="balance" target="right">查询余额</a><br>
+	<a id="transfer">转账</a> 转给账户<input type="text" id="toAccount">
+		金额<input type="text" id="money">
+		<br>
+	<a  id="log" target="right">查询交易记录</a>起始日期<input type="date" id="startDate">
+		结束日期<input type="date" id="endDate"><br>
+	<a  id="change" target="right">修改密码</a><br>
+		旧密码<input type="password" id="oldPsw"><br>
+		新密码 <input type="password" id="newPsw"><br>
+		请确认<input type="password" id="checkoutPsw"><br>
+	</div>
+	<div id="show" style="width:700px;height:500px;border:3px solid #000;margin-top: 40px;margin-left: 30px;padding-top: 50px;" >
+
+	</div>
+</body>
+<script type="text/javascript">
+	$(function () {
+
+	})
+
+
+	//查询余额
+	$("#balance").on("click",function () {
+		$.ajax({
+			url:"/account",
+			data:{"method":"balance"},
+			type:"post",
+			dataType:"json",
+			success:function (result) {
+				$("#show").html("<p>"+result+"</p>");
+			}
+		})
+	})
+	//查询日志
+	$("#log").on("click",function () {
+		var startDate = $("#startDate").val();
+		var endDate=$("#endDate").val();
+		$.ajax({
+			url:"/transaction",
+			data:{"method":"log","startDate":startDate,"endDate":endDate},
+			type:"post",
+			dataType:"json",
+			success:function (result) {
+				if(result.length>0){
+					for(var i =0;i<result.length;i++){
+						var operation = "转入"
+						var money=result[i].income;
+						if (result[i].income==null||result[i].income==''){
+							operation='转出';
+							money =result[i].expense;
+						}
+						$("#show").append("<p>"+result[i].cardno+" "+operation+"  "+money+"  " +result[i].transactionDate +"  </p>" );
+
+					}
+				}
+
+			}
+		})
+	})
+	//转账
+	$("#transfer").on("click",function () {
+		var toAccount = $("#toAccount").val();
+		var money=$("#money").val();
+		$.ajax({
+			url:"/account",
+			data:{"method":"transfer","toAccount":toAccount,"money":money},
+			type:"post",
+			dataType:"json",
+			success:function (result) {
+				$("#show").html("<p>"+result.code+"</p><p>"+result.message+"</p>");
+			}
+		})
+	})
+
+
+
+
+	$("#change").on("click",function () {
+		/*旧密码<input type="date" id="oldPsw"><br>
+				新密码 <input type="date" id="newPsw"><br>
+				请确认<input type="date" id="checkoutPsw"><br>*/
+		var oldPsw = $("#oldPsw").val();
+		var newPsw = $("#newPsw").val();
+		var checkoutPsw = $("#checkoutPsw").val();
+
+		if (oldPsw.length>6||newPsw.length>6||checkoutPsw.length>6){
+			alert("请确认密码长度");
+			return;
+		}
+
+		if(checkoutPsw!=newPsw){
+			alert("两次输入的密码不一致")
+			return;
+		}
+
+		$.ajax({
+			url:"/account",
+			data:{"method":"checkOldPassword","password":oldPsw},
+			type:"post",
+			dataType:"json",
+			success:function (result) {
+				if(0==result){
+					alert("旧密码验证失败")
+					return;
+				}
+				changePassword();
+
+			}
+		})
+
+		function changePassword() {
+			$.ajax({
+				url:"/account",
+				data:{"method":"changePassword","password":newPsw},
+				type:"post",
+				dataType:"json",
+				success:function (result) {
+					if(0==result){
+						alert("修改失败");
+					}else {
+						alert("修改成功");
+						window.location.href='login.html';
+					}
+				}
+			})
+		}
+
+
+
+	})
+</script>
+</html>
